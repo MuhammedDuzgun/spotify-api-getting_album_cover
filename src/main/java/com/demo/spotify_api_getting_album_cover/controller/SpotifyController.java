@@ -1,5 +1,6 @@
 package com.demo.spotify_api_getting_album_cover.controller;
 
+import com.demo.spotify_api_getting_album_cover.model.SpotifyTrackInfo;
 import com.demo.spotify_api_getting_album_cover.service.SpotifyService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,8 +16,8 @@ public class SpotifyController {
     }
 
     @GetMapping("/album-cover")
-    public String getAlbumCover(@RequestParam String trackName) {
-        return spotifyService.getAlbumCover(trackName);
+    public SpotifyTrackInfo getAlbumCover(@RequestParam String trackName) {
+        return spotifyService.getAlbumCoverAndLink(trackName);
     }
 
 }

@@ -1,5 +1,6 @@
 package com.demo.spotify_api_getting_album_cover.service;
 
+import com.demo.spotify_api_getting_album_cover.model.SpotifyTrackInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,22 +25,35 @@ public class SpotifyService {
     private String accessToken;
 
 
-    public String getAlbumCover(String trackName) {
-        // Access token'ı al
+    public SpotifyTrackInfo getAlbumCoverAndLink(String trackName) {
         if (accessToken == null || isTokenExpired()) {
             accessToken = getAccessToken();
         }
 
-        // Albüm kapağı URL'sini al
         String url = apiUrl + "/search?q=" + trackName + "&type=track&limit=1";
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);  // Access token ile header ekle
+        headers.setBearerAuth(accessToken);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-        return extractAlbumCoverUrl(response.getBody());
+        return extractTrackInfo(response.getBody());
+    }
+
+    private SpotifyTrackInfo extractTrackInfo(String response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(response);
+            JsonNode trackNode = jsonNode.path("tracks").path("items").get(0);
+            String albumCoverUrl = trackNode.path("album").path("images").get(0).path("url").asText();
+            String trackLink = trackNode.path("external_urls").path("spotify").asText();
+
+            return new SpotifyTrackInfo(albumCoverUrl, trackLink);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Hata durumunda null döndür
+        }
     }
 
     private String getAccessToken() {
@@ -64,18 +78,6 @@ public class SpotifyService {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(response);
             return jsonNode.get("access_token").asText();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null; // Hata durumunda null döndür
-        }
-    }
-
-    private String extractAlbumCoverUrl(String response) {
-        // JSON parsing ile albüm kapağı URL'sini alın
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonNode = objectMapper.readTree(response);
-            return jsonNode.path("tracks").path("items").get(0).path("album").path("images").get(0).path("url").asText();
         } catch (Exception e) {
             e.printStackTrace();
             return null; // Hata durumunda null döndür
